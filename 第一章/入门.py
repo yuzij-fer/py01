@@ -81,9 +81,9 @@ while True:
                 print(f'数学最高分为：{math_name}{math_max}')
                 print(f'语文最高分为：{chinese_name}{chinese_max}')
                 print(f'英语最高分为：{english_name}{english_max}')
-                math_min = 0
-                chinese_min = 0
-                english_min = 0
+                math_min = 100
+                chinese_min = 100
+                english_min = 100
                 math_name = ""
                 chinese_name = ""
                 english_name = ""
@@ -97,7 +97,7 @@ while True:
                     if chinese < chinese_min:
                         chinese_min = chinese
                         chinese_name = name
-                    if english < english_max:
+                    if english < english_min:
                         english_min = english
                         english_name = name
                 print(f'数学最低分为：{math_name}{math_min}')
