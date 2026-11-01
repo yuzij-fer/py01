@@ -1,5 +1,3 @@
-from ast import parse
-
 shopping_cart={}
 print('欢迎使用徐帅帮你买购物车系统')
 print()
