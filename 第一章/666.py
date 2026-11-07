@@ -34,8 +34,8 @@ while True:
             if name in shopping_cart:
                 print('商品已在购物车')
             else:
-                parse1=input('商品价格为:')
-                numb1=input('商品数量为:')
+                parse1=float(input('商品价格为:'))
+                numb1=float(input('商品数量为:'))
                 shopping_cart[name]={'价格':parse1,'数量':numb1}
                 print('添加成功')
         case 2:
@@ -43,8 +43,8 @@ while True:
             if name not in shopping_cart:
                 print('商品不存在')
             else:
-                parse_new=input('请输入新的价格：')
-                numb_new=input('请输入新的数量：')
+                parse_new=float(input('请输入新的价格：'))
+                numb_new=float(input('请输入新的数量：'))
                 shopping_cart[name]={'价格':parse_new,'数量':numb_new}
                 print('修改成功')
         case 3:
