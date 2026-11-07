@@ -85,7 +85,7 @@ class Education:
             print(i)
 
     def funtion(self):
-        print(f'欢迎使用教务管理系统{Education.system_version}')
+        print(f'欢迎使用教务管理系统{self.system_version}')
 
         while True:
             print()
@@ -124,7 +124,8 @@ if __name__ == '__main__':
 
 
 
-
+from 第一章.way import goods_price
+a=goods_price('飞机',1000,5000,10)
 
 
 
