@@ -18,7 +18,7 @@ class User:
                 self.q_send.put(msg)
 
     def receivemessage(self):
-        while not self.stop_event.is_set() and not self.q_reiv.empty():
+        while not self.stop_event.is_set() or not self.q_reiv.empty():
             try:
                 msg=self.q_reiv.get(timeout=0.25)
                 print(msg)

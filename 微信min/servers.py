@@ -1,9 +1,14 @@
 #接口端双线处理接受与发出
+from abc import ABC, abstractmethod
 import queue
 import serial
 import socket
 import threading
-class Network:
+class BaseServer(ABC):
+    @abstractmethod
+    def start(self):
+        pass
+class Network(BaseServer):
     def __init__(self,q_send, q_reiv,stop_event):
         self.q_send = q_send
         self.q_reiv = q_reiv
@@ -11,19 +16,23 @@ class Network:
         self.boss = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.boss.bind(('127.0.0.1',8080))
         self.boss.listen(5)
+        self.a, self.b = None, None
+    def wait(self):
         self.a, self.b = self.boss.accept()
+        threading.Thread(target=self.send, daemon=True).start()
+        threading.Thread(target=self.recv, daemon=True).start()
 
     def start(self):
-        threading.Thread(target=self.send,daemon=True).start()
-        threading.Thread(target=self.recv,daemon=True).start()
+        threading.Thread(target=self.wait(), daemon=True).start()
+
     def send(self):
-        while not self.stop_event.is_set()  and  not self.q_send.empty():
+        while not self.stop_event.is_set()  or  not self.q_send.empty():
             try:
                  msg=self.q_send.get(timeout=1)
                  msg_send=f'<START>{msg}</START>'
                  self.a.send(msg_send.encode())
 
-            except self.q_send.empty():
+            except queue.Empty:
                 pass
 
     def recv(self):
@@ -35,7 +44,7 @@ class Network:
             except Exception :
                 break
 
-class Server:
+class Server(BaseServer):
     def __init__(self,q_send,q_recv, stop_event):
         self.q_send = q_send
         self.q_recv = q_recv
