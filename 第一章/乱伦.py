@@ -2,7 +2,7 @@
 # import queue
 # import time
 # import logging
-# import opencv
+# import opencv_ball
 #
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 #

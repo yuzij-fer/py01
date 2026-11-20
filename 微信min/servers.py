@@ -48,7 +48,7 @@ class Server(BaseServer):
     def __init__(self,q_send,q_recv, stop_event):
         self.q_send = q_send
         self.q_recv = q_recv
-        self.ser=serial.Serial('COM',9600)
+        self.ser=serial.Serial('COM1',9600,timeout=1)
         self.stop_event = stop_event
 
     def start(self):
@@ -56,11 +56,11 @@ class Server(BaseServer):
         threading.Thread(target=self.recv, daemon=True).start()
 
     def send(self):
-        while not self.stop_event.is_set() and not self.q_send.empty():
+        while not self.stop_event.is_set() or not self.q_send.empty():
             try:
                 msg=self.q_send.get(timeout=1)
                 msg_send=b'\xAA'+msg.encode()+b'\x55'
-                self.ser.write(msg_send.encode())
+                self.ser.write(msg_send)
             except queue.Empty :
                 pass
 

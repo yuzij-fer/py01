@@ -5,7 +5,7 @@ import threading
 import queue
 import time
 import logging
-model=YOLO(r'/opencv/runs\detect\train\weights\best.pt')
+#model=YOLO(r'/opencv_ball/runs\detect\train\weights\best.pt')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(threadName)s] - %(message)s')
 

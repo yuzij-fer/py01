@@ -1,7 +1,7 @@
-path: D:/PC/py01
+path: D:/PC/py01/opencv_mast/rm_dataset
 train: train/images
 val: val/images
 test: test/images
 
 nc: 1
-names: ['red_ball']
+names: ['armor']

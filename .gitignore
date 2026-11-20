@@ -1,0 +1,33 @@
+# 虚拟环境
+.venv/
+venv/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# 训练产物
+runs/
+
+# 数据集
+opencv_ball/train/
+opencv_ball/val/
+opencv_ball/test/
+opencv_mast/images_raw/
+opencv_mast/rm_dataset/
+soujiou/basic/yolo/train/
+soujiou/basic/yolo/val/
+soujiou/basic/yolo/test/
+soujiou/basic/yolo/images_raw/
+
+# 大文件
+*.mp4
+*.avi
+*.mov
+*.pt
+*.onnx
