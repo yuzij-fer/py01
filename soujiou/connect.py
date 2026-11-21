@@ -3,6 +3,7 @@ import serial
 import logging
 import threading
 import time
+import struct
 
 
 class Ser:
@@ -37,17 +38,18 @@ class Ser:
         return self.ser is not None and self.ser.is_open
 
 #发送坐标
-    def send(self,x,y) -> bool:
+    def send(self,x,y,dist,notice) -> bool:
         x = max(0, min(9999, int(round(float(x)))))
         y = max(0, min(9999, int(round(float(y)))))
+        dist = max(0, min(9999, int(round(float(dist)))))
         with self._lock:
             if not  self.is_connected() and not self.reconnect() :
                 logging.warning("串口连接失败")
                 return False
-            data=f'{x},{y}'
+            pack=struct.pack("<ffff",x,y,dist,notice)
             #0xAA接收至0x55
             try:
-                self.ser.write(b'\xAA'+data.encode()+b'\x55')
+                self.ser.write(b'\xAA'+pack+b'\x55')
                 return True
             except Exception as e:
                 logging.error("Failed to send data")
@@ -61,9 +63,9 @@ class Ser:
 
  #————————————————————————————悬停重复发送指令————————————————————————————————
 
-    def send_repeat(self,x,y,times=2,interval=0.02):
+    def send_repeat(self,x,y,dist,notice,times=2,interval=0.02):
         for i in range(times):
-            ok=self.send(x,y)
+            ok=self.send(x,y,dist,notice)
             if not ok:
                 return False
             time.sleep(interval)
