@@ -48,7 +48,11 @@ class Ser:
             if not  self.is_connected() and not self.reconnect() :
                 logging.warning("串口连接失败")
                 return False
-            pack=struct.pack("<ffff",x,y,dist,notice)
+            try:
+                pack=struct.pack("<ffff",x,y,dist,notice)
+            except Exception as e:
+                logging.error("data error%s",e)
+                return False
             #帧头帧尾统一由 config 定义
             try:
                 self.ser.write(FRAME_HEAD+pack+FRAME_TAIL)
@@ -62,16 +66,6 @@ class Ser:
                     pass
                 self.ser = None
                 return False
-
- #————————————————————————————悬停重复发送指令————————————————————————————————
-
-    def send_repeat(self,x,y,dist,notice,times=2,interval=0.02):
-        for i in range(times):
-            ok=self.send(x,y,dist,notice)
-            if not ok:
-                return False
-            time.sleep(interval)
-        return True
 
 #接收信息,协议未确定
     def recv(self):

@@ -4,7 +4,7 @@ import queue
 from ultralytics import YOLO
 import cv2
 import numpy as np
-
+from config import HSV_LOWER,HSV_UPPER
 
 
 class Detector:
@@ -12,14 +12,14 @@ class Detector:
         self.model = YOLO(model_path)
         self.p_queue = p_queue
         self.last_img = None      # 最近一帧，给主线程画框用
-        self.lower= np.array([102,102,102])
-        self.upper= np.array([179,255,255])
+        self.lower= HSV_LOWER
+        self.upper= HSV_UPPER
 
     def deal(self):               #调用yolo优先处理
         try:
             img=self.p_queue.get(timeout=0.25)
         except queue.Empty:       # 队列空是正常情况，不是异常
-            return None
+            return False , None
         self.last_img = img
         try:
             result=self.model(img,conf=0.3,verbose=False)
@@ -27,7 +27,7 @@ class Detector:
             if len(boxes)>0:
                 box=boxes[0]
                 x1,y1,x2,y2=box.xyxy[0].cpu().numpy()
-                return int(x1),int(y1),int(x2),int(y2)
+                return True  ,  (int(x1),int(y1),int(x2),int(y2))
         except Exception as e:
             logging.error(f"YOLO推理异常{e}")
 
@@ -44,7 +44,7 @@ class Detector:
                 cnt=max(contour,key=cv2.contourArea)
                 if cv2.contourArea(cnt)>50:
                     x,y,w,h = cv2.boundingRect(cnt)
-                    return int(x),int(y),int(x+w),int(y+h)
+                    return  True ,  (int(x),int(y),int(x+w),int(y+h))
         except Exception as e:
             logging.error(f'opencv推理异常{e}')
-        return None
+        return  True , None
