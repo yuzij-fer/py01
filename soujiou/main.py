@@ -31,6 +31,10 @@ last_y= 0.0
 last_z= 0.0
 lost_frame_cnt= 0
 max_lost_frame= 24
+
+#刚开始未锁定任何目标
+lock = False
+
 #线程开始执行
 
 t1.start()
@@ -52,6 +56,7 @@ try:
                     last_x = dx
                     last_y = dy
                     last_z = z
+                    lock = True
                     ok=cont.send(dx,dy,z,notice=1)
                     if ok:
                         logging.info("send success")
@@ -65,7 +70,7 @@ try:
 #========================目标暂时被遮挡=======================
         elif  now:
             lost_frame_cnt +=1
-            if lost_frame_cnt <= max_lost_frame:
+            if lost_frame_cnt <= max_lost_frame and lock:
                 try:
                     ok = cont.send(last_x, last_y, last_z, notice=2)
                     if ok:
