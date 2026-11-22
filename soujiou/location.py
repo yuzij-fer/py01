@@ -1,23 +1,21 @@
+#用于测定真实距离
 
-
-
-# ════════════════════════════════默认参数══════════════ ══════════════════
-
-REAL_H = 0.05        # 框中"高度"对应的真实尺寸（米）——魔方边长 5cm
-FY = 786.09          # Y 轴焦距（像素），配"用高度算距离"
-FX = 945.15          # X 轴焦距（像素），配"用宽度算距离"
-
-# 框高下限。含义是「允许的最大相对误差」：1/min_pixel_h = 误差上限
-#   10  → 接受 10% 误差 → 有效量程约 3.9 米（= REAL_H*FY/10）
-#   20  → 接受  5% 误差 → 有效量程约 2.0 米
-
-MIN_PIXEL_H = 10
-
+# ══════════════════════════════════════════════════════════════════
+# 默认参数全部来自 config —— 这个文件不再有自己的数字
+#   TARGET_REAL_H : 框中高度对应的真实尺寸（米）
+#   CAMERA.fx/fy  : 与相机内参同源，改标定只改 config 一处
+#   MIN_PIXEL_H   : 框高下限，含义是"允许的最大相对误差"
+#                   10 → 10% 误差 → 有效量程约 3.9 米（= REAL_H*FY/10）
+#                   20 →  5% 误差 → 有效量程约 2.0 米
+# ══════════════════════════════════════════════════════════════════
+from config import CAMERA, TARGET_REAL_H, MIN_PIXEL_H
 
 
 class Get_distance:
 
-    def __init__(self, real_h=REAL_H, fx=FX, fy=FY, min_pixel_h=MIN_PIXEL_H):
+    def __init__(self, real_h=TARGET_REAL_H, fx=CAMERA.fx, fy=CAMERA.fy,
+                 min_pixel_h=MIN_PIXEL_H):
+        # 保留构造参数：测试时可以塞假参数进来，不必动全局配置
         self.real_h = real_h
         self.fx = fx
         self.fy = fy

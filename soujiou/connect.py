@@ -1,13 +1,15 @@
 #串口通信
+#
 import serial
 import logging
 import threading
 import time
 import struct
+from config import SERIAL_PORT, SERIAL_BAUD, FRAME_HEAD, FRAME_TAIL
 
 
 class Ser:
-    def __init__(self,port='COM1',baud=115200):  #内定参数并打开串口
+    def __init__(self,port=SERIAL_PORT,baud=SERIAL_BAUD):  #内定参数并打开串口
         self.ser = None
         self.port = port
         self.baud = baud
@@ -39,17 +41,17 @@ class Ser:
 
 #发送坐标
     def send(self,x,y,dist,notice) -> bool:
-        x = max(0, min(9999, int(round(float(x)))))
-        y = max(0, min(9999, int(round(float(y)))))
-        dist = max(0, min(9999, int(round(float(dist)))))
+        # x = max(0, min(9999, int(round(x*1000))+5000))
+        # y = max(0, min(9999, int(round(y*1000))+5000))
+        # dist = max(0, min(9999, int(round(float(dist)))))
         with self._lock:
             if not  self.is_connected() and not self.reconnect() :
                 logging.warning("串口连接失败")
                 return False
             pack=struct.pack("<ffff",x,y,dist,notice)
-            #0xAA接收至0x55
+            #帧头帧尾统一由 config 定义
             try:
-                self.ser.write(b'\xAA'+pack+b'\x55')
+                self.ser.write(FRAME_HEAD+pack+FRAME_TAIL)
                 return True
             except Exception as e:
                 logging.error("Failed to send data")

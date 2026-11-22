@@ -1,28 +1,24 @@
 #摄像头采集,保存画面
 import cv2
 import logging
-import numpy as np
 import queue
 import time
-
+from config import CAMERA, WIDTH, HEIGHT, FPS, CAP_ID
 
 
 class Camera :
     #内定参数可自定义
-    def __init__ (self,p_queue,stop_event,width=640,height=480,fps=30,capid=0):
+    def __init__ (self,p_queue,stop_event,width=WIDTH,height=HEIGHT,fps=FPS,capid=CAP_ID):
         self.width=width
         self.height=height
         self.fps=fps
         self.cap_id=capid
         self.p_queue = p_queue
         self.stop_event=stop_event
+        #内参只从 config 来
+        self.camera_mtx = CAMERA.matrix
+        self.camera_dist = CAMERA.dist_coeffs
         self._init_camera()
-        self.camera_mtx = np.array([[945.15025581, 0., 431.22090007],
-                               [0., 786.09360996, 261.05788457],
-                               [0., 0., 1.]], dtype=np.float32)
-
-        self.camera_dist = np.array([[-1.36251624e+00, 6.68606376e+00, 8.73288483e-02, -2.84729744e-03, -9.19749936e+00]],
-                               dtype=np.float32)
 
 #导入参数
     def _init_camera(self):
