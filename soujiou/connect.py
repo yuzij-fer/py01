@@ -71,6 +71,11 @@ class Ser:
             time.sleep(interval)
         return True
 
+#接收信息,协议未确定
+    def recv(self):
+        pass
+
+
 #断开连接
     def stop(self):
         with self._lock:
