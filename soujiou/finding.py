@@ -60,7 +60,7 @@ class Detector:
             logging.error(f"YOLO推理异常{e}")
 
         if cands:                                # 有候选就在这里停
-            return True, self.pick(cands)        # 不要落到下面的 HSV
+            return True, self.pick(cands)
 
 #--------------------------yolo失败转用opencv--------------------------------
         cands = []
