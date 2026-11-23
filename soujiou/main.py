@@ -24,6 +24,7 @@ cont= Ser(SERIAL_PORT,SERIAL_BAUD)
 finder = Detector(p_queue)
 location = Get_distance()
 t1=threading.Thread(target=cam.running,daemon=True)
+t2=threading.Thread(target=cont.recv_running,args=(stop_event,),daemon=True)
 
 #缓存数据
 last_x= 0.0
@@ -38,6 +39,7 @@ lock = False
 #线程开始执行
 
 t1.start()
+t2.start()
 time.sleep(1)
 
 

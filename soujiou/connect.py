@@ -69,10 +69,23 @@ class Ser:
 
 #接收信息,协议未确定
     def recv(self):
-        pass
+        if not self.is_connected():
+            return None
+        try:
+            data = self.ser.read_all()
+        except Exception as e:
+            logging.error("接收出现问题%s",e)
+            return None
+        return data if data else None
 
+    def recv_running(self, stop_event):
+        while not stop_event.is_set():
+            data = self.recv()
+            if data:
+                logging.info('电控: %s', data.hex(' '))
+            time.sleep(0.01)
 
-#断开连接
+    #断开连接
     def stop(self):
         with self._lock:
             if self.ser:

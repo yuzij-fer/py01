@@ -1,0 +1,142 @@
+无人机模拟搜救 · 视觉上位机
+────────────────────────────────────────────────────────────
+职责：摄像头采集 → YOLO / HSV 识别目标 → 单目测距 → 串口把目标
+      相对坐标发给电控，由电控驱动飞机追踪或悬停。
+
+运行：python main.py
+依赖：opencv-python / ultralytics / numpy / pyserial
+
+
+一、功能模块（运行时参与的）
+────────────────────────────────────────────────────────────
+
+camera.py  Camera
+  职责：独立线程采集画面并去畸变，把帧投进队列。
+  输入：摄像头设备
+  输出：queue.Queue 里的一帧图像 (480, 640, 3)
+  关键方法：
+    running()  —— 采集线程主体，掉线时释放并重连
+    capture()  —— 读一帧 → cv2.undistort → 投队列
+    stop()     —— 置位 stop_event，通知线程退出
+  要点：队列满了先 get_nowait 丢掉旧帧，宁可看最新，不排队。
+
+finding.py  Detector
+  职责：从队列取一帧，产出「唯一一个」目标框。
+  输入：queue 里的一帧
+  输出：(has_frame, box)
+        (False, None)          没拿到帧（队列空）
+        (True,  None)          有帧但没识别到目标
+        (True,  (x1,y1,x2,y2)) 有帧且有目标
+  关键方法：
+    deal()      —— 队列取帧 → YOLO 推理 → 失败则 HSV 兜底 → 交给 pick
+    pick(cands) —— 从候选里选定一个；有历史锁定时按「离上一帧最近」选，
+                   不用置信度，避免两个相似目标之间来回跳
+  要点：两个识别器只负责「产出候选」，选靶统一收口在 pick。
+
+location.py  Get_distance
+  职责：把框的像素尺寸换算成米制空间位置。
+  输入：box + 画面宽高
+  输出：{z, dx, dy, center_x, center_y, pixel_h} 或 None
+  关键方法：
+    distance(pixel_h) —— 小孔成像 z = real_h * fy / pixel_h
+    offset(cx, cy, z) —— 按内参把像素偏移换算成米
+    locate(box, w, h) —— 组合上面两步
+  要点：框高小于 min_pixel_h 时返回 None（误差超过容忍度），
+        调用方必须处理 None，不能直接拆包。
+
+connect.py  Ser
+  职责：串口收发，带重连与线程安全。
+  输入：x / y / dist / notice
+  输出：18 字节帧（见第四节）
+  关键方法：
+    open() / reconnect() / is_connected() —— 连接状态机
+    send(x,y,dist,notice) —— 锁内做完「检查连接 + 写」，返回 bool
+    recv()                —— 读走缓冲区全部字节，原样交给上层
+    stop()                —— 关闭端口
+  要点：send 的锁必须包住「判连接 + write」全过程，否则是 TOCTOU。
+        recv 只取字节、不解释字节 —— 解释失败不该连累取数据。
+
+main.py  （无类）
+  职责：决策与调度，决定「这一帧该发什么」。
+  输入：deal() 的 (has_frame, box)
+  输出：串口调用
+  三路分支：
+    box 非空        → TRACK：算坐标，发 notice=1
+    有帧无目标      → LOST ：复用上一条坐标发 notice=2（上限 24 帧）
+    没有帧          → HOVER：立即发 (0,0,0) notice=0
+  要点：lock 标记「是否真的追过目标」。没追过就不许走复用缓存那条路，
+        否则开机第一帧会发出一条「目标在原点」的假指令。
+
+
+二、数据模块（离线准备的）
+────────────────────────────────────────────────────────────
+
+config.py
+  职责：全工程唯一的参数源。改参数只动这一个文件。
+  内容：分辨率、相机内参、畸变系数、目标真实尺寸、串口端口与波特率、
+        帧头帧尾、HSV 阈值、MAX_JUMP。
+  自带两个方法：
+    problems()  —— 内参与分辨率自洽性检查，返回问题列表（启动时报警）
+    scaled_to() —— 换分辨率时按比例换算内参
+  规矩：别的文件里不许再出现标定出来的数字。
+
+basic/camera_data/getdata.py
+  职责：棋盘格（7×7）标定，产出 fx / fy / cx / cy 和畸变系数。
+
+basic/camera_data/data.py
+  职责：标定结果存放处。
+  这组数和 config.py 里的不一致，且本身明显不成立
+  这是一次失败的标定输出，不能直接用。
+
+basic/camera_data/findcolor.py
+  职责：HSV 阈值调参工具。拖动 trackbar 实时看掩膜，
+        调好后把 H/S/V 上下限抄进 config.py。
+
+basic/yolo/
+  职责：模型训练与测试。tarian_MJ.py 训练、test.py 验证、
+        data.yaml 数据集配置、best.pt 训练产物。
+        main.py 用的 best.pt 是这里训出来的那份。
+
+
+三、数据流
+────────────────────────────────────────────────────────────
+
+  采集    camera.py ──┐
+                       ├─> queue(maxsize=1)
+  识别    finding.py <─┘
+             │
+             │  box (x1,y1,x2,y2) 或 None
+             ▼
+  决策    main.py
+             │
+             ├─> location.py   box → z / dx / dy（米）
+             └─> connect.py    z / dx / dy → 18 字节帧 → 电控
+
+  线程模型：两个线程
+    主线程    deal → locate → send，约 15Hz（被 YOLO 耗时决定）
+    camera   read → undistort → put，约 30Hz
+    两者之间只有一个 Queue 通信，没有共享变量，所以不需要加锁。
+
+  为什么用队列而不是直接函数调用：
+    采集 30Hz、识别 15Hz，速度差一倍。直接调用会让采集被识别拖慢，
+    队列的作用是「允许两者不同步，并主动丢掉处理不过来的旧帧」。
+    maxsize=1 是有意的：宁可看最新一帧，也不要积压两秒前的画面。
+
+
+四、串口协议（当前实现）
+────────────────────────────────────────────────────────────
+
+  请求帧 18 字节，小端：
+
+    0xAA | x(f32) | y(f32) | dist(f32) | notice(f32) | 0x55
+     1B      4B       4B         4B          4B         1B
+
+  x / y / dist 单位：米（float）
+  notice：0 = 悬停，1 = 追踪，2 = 遮挡期间复用上一条坐标
+
+  已知缺口：
+    没有长度字段，没有校验和。16 字节 float 载荷里随机出现
+    0xAA 或 0x55 的概率约 12%，接收端靠帧头帧尾定界会误判。
+
+
+
